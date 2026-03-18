@@ -2,54 +2,337 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Gym Stats Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.02)"/><circle cx="10" cy="50" r="0.5" fill="rgba(255,255,255,0.02)"/><circle cx="90" cy="90" r="0.5" fill="rgba(255,255,255,0.02)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        #app {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+        
         .workout-card {
-            transition: all 0.3s ease;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
         }
+        
+        .workout-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s;
+        }
+        
+        .workout-card:hover::before {
+            left: 100%;
+        }
+        
         .workout-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(31, 38, 135, 0.2);
         }
+        
         .stat-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
             transition: all 0.3s ease;
         }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-20px, -20px) rotate(180deg); }
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
         .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .nav-btn {
+            position: relative;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .nav-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        
+        .nav-btn:hover::after {
+            width: 100%;
+        }
+        
+        .nav-btn.active {
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .nav-btn.active::after {
+            width: 100%;
+        }
+        
+        .input-field {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .input-field:focus {
+            background: rgba(255, 255, 255, 1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            .stat-card {
+                padding: 1rem;
+            }
+            .stat-card .text-3xl {
+                font-size: 1.5rem;
+            }
+            .btn-primary {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+            .px-4.py-2 {
+                padding: 0.5rem 0.75rem;
+            }
+            .text-lg {
+                font-size: 1.125rem;
+            }
+            .text-2xl {
+                font-size: 1.5rem;
+            }
+            .space-x-4 > * + * {
+                margin-left: 0.5rem;
+            }
+            .gap-6 {
+                gap: 1rem;
+            }
+            .gap-8 {
+                gap: 1.5rem;
+            }
+            .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .grid-cols-1.lg\:grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+            .lg\:col-span-2 {
+                grid-column: span 1;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stat-card {
+                padding: 0.75rem;
+            }
+            .stat-card .text-3xl {
+                font-size: 1.25rem;
+            }
+            .text-xl {
+                font-size: 1rem;
+            }
+            .text-2xl {
+                font-size: 1.25rem;
+            }
+            .px-3.py-2 {
+                padding: 0.5rem 0.75rem;
+            }
+            .px-4.py-2 {
+                padding: 0.375rem 0.75rem;
+            }
+            .px-6.py-2 {
+                padding: 0.5rem 1rem;
+            }
+            .mb-8 {
+                margin-bottom: 1.5rem;
+            }
+            .mb-6 {
+                margin-bottom: 1rem;
+            }
+            .mb-4 {
+                margin-bottom: 0.75rem;
+            }
+            .gap-4 {
+                gap: 0.5rem;
+            }
+            .space-x-4 > * + * {
+                margin-left: 0.25rem;
+            }
+        }
+        
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .btn-primary, button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            input, select, textarea {
+                min-height: 44px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+        }
+        
+        /* Prevent double-tap zoom */
+        * {
+            touch-action: manipulation;
         }
     </style>
 </head>
 <body class="bg-gray-50">
     <div id="app">
         <!-- Header -->
-        <header class="bg-white shadow-sm border-b">
+        <header class="glass-morphism shadow-lg border-b border-white/20 sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center">
-                        <i class="fas fa-dumbbell text-2xl text-purple-600 mr-3"></i>
-                        <h1 class="text-xl font-bold text-gray-900">Gym Stats Tracker</h1>
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3 shadow-lg pulse-animation">
+                            <i class="fas fa-dumbbell text-white text-lg"></i>
+                        </div>
+                        <h1 class="text-xl font-bold gradient-text">Gym Stats Tracker</h1>
                     </div>
-                    <nav class="flex space-x-4">
-                        <button onclick="showView('dashboard')" class="nav-btn text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-chart-line mr-1"></i> Dashboard
+                    <nav class="flex space-x-2 sm:space-x-4 overflow-x-auto">
+                        <button onclick="showView('dashboard')" class="nav-btn text-gray-700 hover:text-purple-600 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300">
+                            <i class="fas fa-chart-line sm:mr-1"></i><span class="hidden sm:inline"> Dashboard</span>
                         </button>
-                        <button onclick="showView('log-workout')" class="nav-btn text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-plus mr-1"></i> Log Workout
+                        <button onclick="showView('log-workout')" class="nav-btn text-gray-700 hover:text-purple-600 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300">
+                            <i class="fas fa-plus sm:mr-1"></i><span class="hidden sm:inline"> Log Workout</span>
                         </button>
-                        <button onclick="showView('history')" class="nav-btn text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-history mr-1"></i> History
+                        <button onclick="showView('history')" class="nav-btn text-gray-700 hover:text-purple-600 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300">
+                            <i class="fas fa-history sm:mr-1"></i><span class="hidden sm:inline"> History</span>
                         </button>
-                        <button onclick="showView('exercises')" class="nav-btn text-gray-700 hover:text-purple-600 px-3 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-list mr-1"></i> Exercises
+                        <button onclick="showView('personal-records')" class="nav-btn text-gray-700 hover:text-purple-600 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300">
+                            <i class="fas fa-trophy sm:mr-1"></i><span class="hidden sm:inline"> Records</span>
+                        </button>
+                        <button onclick="showView('exercises')" class="nav-btn text-gray-700 hover:text-purple-600 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300">
+                            <i class="fas fa-list sm:mr-1"></i><span class="hidden sm:inline"> Exercises</span>
                         </button>
                     </nav>
                 </div>
@@ -60,95 +343,114 @@
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Dashboard View -->
             <div id="dashboard-view" class="view">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Welcome back!</h2>
-                    <p class="text-gray-600">Track your fitness journey and reach your goals</p>
+                <div class="mb-8 slide-in">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Welcome back! 💪</h2>
+                    <p class="text-white/80 text-sm sm:text-base">Track your fitness journey and reach your goals</p>
                 </div>
 
                 <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="stat-card text-white p-6 rounded-lg shadow-lg">
-                        <div class="flex items-center justify-between">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8">
+                    <div class="stat-card text-white p-3 sm:p-4 lg:p-6 rounded-xl shadow-2xl slide-in" style="animation-delay: 0.1s">
+                        <div class="flex items-center justify-between relative z-10">
                             <div>
-                                <p class="text-white/80 text-sm">Total Workouts</p>
-                                <p class="text-3xl font-bold" id="total-workouts">0</p>
+                                <p class="text-white/90 text-xs sm:text-sm font-medium">Total Workouts</p>
+                                <p class="text-2xl sm:text-3xl font-bold" id="total-workouts">0</p>
                             </div>
-                            <i class="fas fa-calendar-check text-3xl text-white/50"></i>
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                <i class="fas fa-calendar-check text-xl sm:text-2xl lg:text-3xl text-white"></i>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card text-white p-6 rounded-lg shadow-lg">
-                        <div class="flex items-center justify-between">
+                    <div class="stat-card text-white p-3 sm:p-4 lg:p-6 rounded-xl shadow-2xl slide-in" style="animation-delay: 0.2s">
+                        <div class="flex items-center justify-between relative z-10">
                             <div>
-                                <p class="text-white/80 text-sm">This Week</p>
-                                <p class="text-3xl font-bold" id="week-workouts">0</p>
+                                <p class="text-white/90 text-xs sm:text-sm font-medium">This Week</p>
+                                <p class="text-2xl sm:text-3xl font-bold" id="week-workouts">0</p>
                             </div>
-                            <i class="fas fa-fire text-3xl text-white/50"></i>
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                <i class="fas fa-fire text-xl sm:text-2xl lg:text-3xl text-white"></i>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card text-white p-6 rounded-lg shadow-lg">
-                        <div class="flex items-center justify-between">
+                    <div class="stat-card text-white p-3 sm:p-4 lg:p-6 rounded-xl shadow-2xl slide-in" style="animation-delay: 0.3s">
+                        <div class="flex items-center justify-between relative z-10">
                             <div>
-                                <p class="text-white/80 text-sm">Total Volume</p>
-                                <p class="text-3xl font-bold" id="total-volume">0</p>
+                                <p class="text-white/90 text-xs sm:text-sm font-medium">Total Volume</p>
+                                <p class="text-2xl sm:text-3xl font-bold" id="total-volume">0</p>
                             </div>
-                            <i class="fas fa-weight text-3xl text-white/50"></i>
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                <i class="fas fa-weight text-xl sm:text-2xl lg:text-3xl text-white"></i>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card text-white p-6 rounded-lg shadow-lg">
-                        <div class="flex items-center justify-between">
+                    <div class="stat-card text-white p-3 sm:p-4 lg:p-6 rounded-xl shadow-2xl slide-in" style="animation-delay: 0.4s">
+                        <div class="flex items-center justify-between relative z-10">
                             <div>
-                                <p class="text-white/80 text-sm">Personal Records</p>
-                                <p class="text-3xl font-bold" id="personal-records">0</p>
+                                <p class="text-white/90 text-xs sm:text-sm font-medium">Personal Records</p>
+                                <p class="text-2xl sm:text-3xl font-bold" id="personal-records">0</p>
                             </div>
-                            <i class="fas fa-trophy text-3xl text-white/50"></i>
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                                <i class="fas fa-trophy text-xl sm:text-2xl lg:text-3xl text-white"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Recent Workouts -->
-                <div class="bg-white p-6 rounded-lg shadow-lg">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Workouts</h3>
-                    <div id="recent-workouts" class="space-y-4">
-                        <p class="text-gray-500 text-center py-8">No workouts logged yet. Start by logging your first workout!</p>
+                <div class="glass-morphism p-4 sm:p-6 rounded-xl shadow-2xl slide-in" style="animation-delay: 0.5s">
+                    <h3 class="text-lg font-semibold gradient-text mb-4 flex items-center">
+                        <i class="fas fa-clock-rotate-left mr-2"></i>
+                        Recent Workouts
+                    </h3>
+                    <div id="recent-workouts" class="space-y-3 sm:space-y-4">
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                                <i class="fas fa-dumbbell text-white text-2xl"></i>
+                            </div>
+                            <p class="text-gray-500">No workouts logged yet. Start by logging your first workout!</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Log Workout View -->
             <div id="log-workout-view" class="view hidden">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Log New Workout</h2>
-                    <p class="text-gray-600">Record your exercises, sets, and reps</p>
+                <div class="mb-8 slide-in">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Log New Workout</h2>
+                    <p class="text-white/80 text-sm sm:text-base">Record your exercises, sets, and reps</p>
                 </div>
 
-                <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="glass-morphism p-4 sm:p-6 rounded-xl shadow-2xl slide-in" style="animation-delay: 0.1s">
                     <form id="workout-form">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Workout Date</label>
-                                <input type="date" id="workout-date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                                <input type="date" id="workout-date" class="input-field w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-base" required>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Workout Type</label>
-                                <select id="workout-type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                    <option value="strength">Strength Training</option>
-                                    <option value="cardio">Cardio</option>
-                                    <option value="flexibility">Flexibility</option>
-                                    <option value="sports">Sports</option>
-                                    <option value="other">Other</option>
+                                <select id="workout-type" class="input-field w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-base">
+                                    <option value="strength">💪 Strength Training</option>
+                                    <option value="cardio">🏃 Cardio</option>
+                                    <option value="flexibility">🧘 Flexibility</option>
+                                    <option value="sports">⚽ Sports</option>
+                                    <option value="other">🎯 Other</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Workout Notes</label>
-                            <textarea id="workout-notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="How did you feel? Any achievements?"></textarea>
+                            <textarea id="workout-notes" rows="3" class="input-field w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-base" placeholder="How did you feel? Any achievements?"></textarea>
                         </div>
 
                         <div class="mb-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-900">Exercises</h3>
-                                <button type="button" onclick="addExercise()" class="btn-primary text-white px-4 py-2 rounded-md">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                                <h3 class="text-lg font-semibold gradient-text flex items-center">
+                                    <i class="fas fa-list-check mr-2"></i>
+                                    Exercises
+                                </h3>
+                                <button type="button" onclick="addExercise()" class="btn-primary text-white px-4 py-2 rounded-lg text-sm sm:text-base shadow-lg">
                                     <i class="fas fa-plus mr-2"></i>Add Exercise
                                 </button>
                             </div>
@@ -157,12 +459,12 @@
                             </div>
                         </div>
 
-                        <div class="flex justify-end space-x-4">
-                            <button type="button" onclick="clearForm()" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
+                            <button type="button" onclick="clearForm()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all duration-300 order-2 sm:order-1">
                                 Clear
                             </button>
-                            <button type="submit" class="btn-primary text-white px-6 py-2 rounded-md">
-                                Save Workout
+                            <button type="submit" class="btn-primary text-white px-6 py-2 rounded-lg shadow-lg order-1 sm:order-2">
+                                <i class="fas fa-save mr-2"></i>Save Workout
                             </button>
                         </div>
                     </form>
@@ -191,6 +493,48 @@
                     </div>
                     <div id="workout-history" class="space-y-4">
                         <p class="text-gray-500 text-center py-8">No workouts found in the selected date range.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Records View -->
+            <div id="personal-records-view" class="view hidden">
+                <div class="mb-8 slide-in">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Personal Records 🏆</h2>
+                    <p class="text-white/80 text-sm sm:text-base">Track your best performances for each exercise</p>
+                </div>
+
+                <!-- Records Summary -->
+                <div class="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-4 sm:gap-6 mb-8">
+                    <div class="glass-morphism p-4 sm:p-6 rounded-xl shadow-2xl slide-in" style="animation-delay: 0.1s">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm font-medium">Total Records</p>
+                                <p class="text-2xl sm:text-3xl font-bold gradient-text" id="total-records-count">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-lg">
+                                <i class="fas fa-medal text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Records List -->
+                <div class="glass-morphism p-4 sm:p-6 rounded-xl shadow-2xl slide-in" style="animation-delay: 0.4s">
+                    <h3 class="text-lg font-semibold gradient-text mb-4 flex items-center">
+                        <i class="fas fa-trophy mr-2"></i>
+                        Exercise Records
+                    </h3>
+                    <div class="mb-4">
+                        <input type="text" id="record-search" placeholder="Search exercises..." class="input-field w-full px-4 py-2 rounded-lg" onkeyup="filterRecords()">
+                    </div>
+                    <div id="personal-records-list" class="space-y-3 sm:space-y-4">
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                                <i class="fas fa-trophy text-white text-2xl"></i>
+                            </div>
+                            <p class="text-gray-500">No personal records yet. Start logging workouts to see your records!</p>
+                        </div>
                     </div>
                 </div>
             </div>
