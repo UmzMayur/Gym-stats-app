@@ -7,12 +7,14 @@ class GymStatsTracker {
         this.exerciseCounter = 0;
         this.chart = null;
         this.db = null;
+        this.userName = '';
         
         this.init();
     }
 
     async init() {
         await this.initDatabase();
+        this.loadUserName();
         this.setDefaultDate();
         this.setupEventListeners();
         await this.loadData();
@@ -176,15 +178,88 @@ class GymStatsTracker {
     }
 
     setupEventListeners() {
+        // Workout form submission
         document.getElementById('workout-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.saveWorkout();
         });
 
+        // Add exercise form submission
         document.getElementById('add-exercise-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.addNewExercise();
         });
+
+        // Name form submission
+        document.getElementById('name-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveUserName();
+        });
+
+        // Show name modal on first visit
+        if (!this.userName) {
+            setTimeout(() => this.showNameModal(), 1000);
+        }
+    }
+
+    loadUserName() {
+        this.userName = localStorage.getItem('gym-tracker-user-name') || '';
+        this.updateUserNameDisplay();
+    }
+
+    saveUserName() {
+        const nameInput = document.getElementById('name-input');
+        const name = nameInput.value.trim();
+        
+        if (name) {
+            this.userName = name;
+            localStorage.setItem('gym-tracker-user-name', name);
+            this.updateUserNameDisplay();
+            this.hideNameModal();
+        }
+    }
+
+    updateUserNameDisplay() {
+        const displayName = this.userName || 'Athlete';
+        document.getElementById('user-name-display').textContent = displayName;
+    }
+
+    showNameModal() {
+        document.getElementById('name-modal').classList.remove('hidden');
+        document.getElementById('name-input').value = this.userName;
+        document.getElementById('name-input').focus();
+    }
+
+    hideNameModal() {
+        document.getElementById('name-modal').classList.add('hidden');
+    }
+
+    showNotification(message, type = 'success') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 slide-in ${
+            type === 'success' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-red-500 text-white'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>
+                <span class="font-medium">${message}</span>
+            </div>
+        `;
+        
+        // Add to document
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
     }
 
     showView(viewName) {
@@ -222,6 +297,7 @@ class GymStatsTracker {
         // Update view-specific content
         if (viewName === 'dashboard') {
             this.updateDashboard();
+            this.updatePersonalRecords();
         } else if (viewName === 'history') {
             this.renderHistory();
         } else if (viewName === 'personal-records') {
@@ -261,7 +337,7 @@ class GymStatsTracker {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                     <div>
                         <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Weight (kgs)</label>
-                        <input type="number" min="0" step="2.5" value="0" class="weight-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                        <input type="number" min="0" step="0.5" value="0" class="weight-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                     </div>
                     <div>
                         <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
@@ -272,6 +348,9 @@ class GymStatsTracker {
         `;
         
         container.appendChild(exerciseDiv);
+        
+        // Show success notification
+        this.showNotification('Exercise added successfully!', 'success');
     }
 
     async saveWorkout() {
@@ -311,7 +390,7 @@ class GymStatsTracker {
         
         // Clear form and show success message
         this.clearForm();
-        alert('Workout saved successfully!');
+        this.showNotification('Workout saved successfully! 🎉', 'success');
         this.showView('dashboard');
     }
 
@@ -319,6 +398,19 @@ class GymStatsTracker {
         document.getElementById('workout-form').reset();
         document.getElementById('exercises-container').innerHTML = '';
         this.setDefaultDate();
+        
+        // Reset editing state
+        this.editingWorkoutId = null;
+        
+        // Reset save button
+        const saveButton = document.querySelector('#workout-form button[type="submit"]');
+        if (saveButton) {
+            saveButton.innerHTML = '<i class="fas fa-save mr-2"></i>Save Workout';
+            saveButton.onclick = (e) => {
+                e.preventDefault();
+                this.saveWorkout();
+            };
+        }
     }
 
     updateDashboard() {
@@ -387,9 +479,9 @@ class GymStatsTracker {
         }
 
         container.innerHTML = recentWorkouts.map(workout => `
-            <div class="workout-card border border-gray-200 rounded-lg p-4 hover:shadow-md">
-                <div class="flex justify-between items-start">
-                    <div>
+            <div class="workout-card border border-white/20 rounded-xl p-4 sm:p-5 shadow-xl" id="workout-${workout.id}">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex-1">
                         <h4 class="font-semibold text-gray-900">${this.formatDate(workout.date)}</h4>
                         <p class="text-sm text-gray-600 capitalize">${workout.type} • ${workout.exercises.length} exercises</p>
                         <div class="mt-2 flex flex-wrap gap-2">
@@ -403,6 +495,14 @@ class GymStatsTracker {
                         <p class="text-sm font-medium text-gray-900">${this.calculateWorkoutVolume(workout)} kgs</p>
                         <p class="text-xs text-gray-500">total volume</p>
                     </div>
+                </div>
+                <div class="flex justify-end space-x-2 mt-3">
+                    <button onclick="editWorkout(${workout.id})" class="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-edit mr-1"></i>Edit
+                    </button>
+                    <button onclick="deleteWorkout(${workout.id})" class="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors">
+                        <i class="fas fa-trash mr-1"></i>Delete
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -505,13 +605,184 @@ class GymStatsTracker {
         await this.saveData();
         this.renderExerciseList();
         this.hideAddExerciseModal();
+        
+        // Show success notification
+        this.showNotification(`"${name}" added to Exercise Library! 💪`, 'success');
     }
 
     async deleteExercise(exerciseId) {
         if (confirm('Are you sure you want to delete this exercise?')) {
+            // Find exercise name for notification
+            const exercise = this.exercises.find(ex => ex.id === exerciseId);
+            const exerciseName = exercise ? exercise.name : 'Exercise';
+            
             this.exercises = this.exercises.filter(ex => ex.id !== exerciseId);
             await this.saveData();
             this.renderExerciseList();
+            
+            // Show success notification
+            this.showNotification(`"${exerciseName}" removed from Exercise Library`, 'success');
+        }
+    }
+
+    async deleteWorkout(workoutId) {
+        if (confirm('Are you sure you want to delete this workout? This action cannot be undone.')) {
+            try {
+                // Remove workout from array
+                this.workouts = this.workouts.filter(w => w.id !== workoutId);
+                
+                // Save to database
+                await this.saveData();
+                
+                // Update UI
+                this.updateDashboard();
+                this.renderHistory();
+                
+                // Show notification
+                this.showNotification('Workout deleted successfully', 'success');
+            } catch (error) {
+                console.error('Error deleting workout:', error);
+                this.showNotification('Error deleting workout', 'error');
+            }
+        }
+    }
+
+    async editWorkout(workoutId) {
+        const workout = this.workouts.find(w => w.id === workoutId);
+        if (!workout) return;
+
+        // Fill form with workout data
+        document.getElementById('workout-date').value = workout.date;
+        document.getElementById('workout-type').value = workout.type;
+        document.getElementById('workout-notes').value = workout.notes || '';
+
+        // Clear existing exercises and load workout exercises
+        const container = document.getElementById('exercises-container');
+        container.innerHTML = '';
+
+        // Add each exercise from the workout
+        workout.exercises.forEach(exercise => {
+            const exerciseId = `exercise-${this.exerciseCounter++}`;
+            
+            const exerciseDiv = document.createElement('div');
+            exerciseDiv.innerHTML = `
+                <div class="workout-card border border-white/20 rounded-xl p-3 sm:p-4 shadow-xl">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+                            <div>
+                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Exercise</label>
+                                <select class="exercise-select input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" required>
+                                    <option value="">Select exercise...</option>
+                                    ${this.exercises.map(ex => `<option value="${ex.id}" ${ex.id === exercise.exerciseId ? 'selected' : ''}>${ex.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Sets</label>
+                                <input type="number" min="1" value="${exercise.sets}" class="sets-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Reps</label>
+                                <input type="number" min="1" value="${exercise.reps}" class="reps-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" required>
+                            </div>
+                        </div>
+                        <button type="button" onclick="removeExercise('${exerciseId}')" class="ml-2 sm:ml-4 text-red-500 hover:text-red-700 text-sm sm:text-base transition-colors duration-200">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Weight (kgs)</label>
+                            <input type="number" min="0" step="0.5" value="${exercise.weight}" class="weight-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+                            <input type="number" min="0" value="${exercise.duration || 0}" class="duration-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(exerciseDiv);
+        });
+
+        // Store the workout ID for updating
+        this.editingWorkoutId = workoutId;
+
+        // Change save button to update
+        const saveButton = document.querySelector('#workout-form button[type="submit"]');
+        saveButton.innerHTML = '<i class="fas fa-save mr-2"></i>Update Workout';
+        saveButton.onclick = (e) => {
+            e.preventDefault();
+            this.updateWorkout();
+        };
+
+        // Switch to workout view
+        this.showView('log-workout');
+        this.showNotification('Workout loaded for editing', 'info');
+    }
+
+    async updateWorkout() {
+        if (!this.editingWorkoutId) return;
+
+        const workout = {
+            id: this.editingWorkoutId,
+            date: document.getElementById('workout-date').value,
+            type: document.getElementById('workout-type').value,
+            notes: document.getElementById('workout-notes').value,
+            exercises: [],
+            updatedAt: new Date().toISOString()
+        };
+
+        // Collect exercise data
+        const exerciseElements = document.querySelectorAll('#exercises-container > div');
+        exerciseElements.forEach(element => {
+            const exerciseSelect = element.querySelector('.exercise-select');
+            if (exerciseSelect.value) {
+                const exercise = {
+                    exerciseId: parseInt(exerciseSelect.value),
+                    exerciseName: exerciseSelect.options[exerciseSelect.selectedIndex].text,
+                    sets: parseInt(element.querySelector('.sets-input').value),
+                    reps: parseInt(element.querySelector('.reps-input').value),
+                    weight: parseFloat(element.querySelector('.weight-input').value) || 0,
+                    duration: parseInt(element.querySelector('.duration-input').value) || 0
+                };
+                workout.exercises.push(exercise);
+            }
+        });
+
+        if (workout.exercises.length === 0) {
+            this.showNotification('Please add at least one exercise to your workout.', 'error');
+            return;
+        }
+
+        try {
+            // Find and update the workout
+            const index = this.workouts.findIndex(w => w.id === this.editingWorkoutId);
+            if (index !== -1) {
+                this.workouts[index] = workout;
+            }
+
+            // Save to database
+            await this.saveData();
+            
+            // Reset editing state
+            this.editingWorkoutId = null;
+            
+            // Reset save button
+            const saveButton = document.querySelector('#workout-form button[type="submit"]');
+            saveButton.innerHTML = '<i class="fas fa-save mr-2"></i>Save Workout';
+            saveButton.onclick = (e) => {
+                e.preventDefault();
+                this.saveWorkout();
+            };
+            
+            // Clear form and show success message
+            this.clearForm();
+            this.showNotification('Workout updated successfully! 🎉', 'success');
+            this.showView('dashboard');
+        } catch (error) {
+            console.error('Error updating workout:', error);
+            this.showNotification('Error updating workout', 'error');
         }
     }
 
@@ -864,6 +1135,26 @@ function hideAddExerciseModal() {
 
 async function deleteExercise(exerciseId) {
     await app.deleteExercise(exerciseId);
+}
+
+function filterRecords() {
+    app.filterRecords();
+}
+
+function showNameModal() {
+    app.showNameModal();
+}
+
+function hideNameModal() {
+    app.hideNameModal();
+}
+
+function editWorkout(workoutId) {
+    app.editWorkout(workoutId);
+}
+
+function deleteWorkout(workoutId) {
+    app.deleteWorkout(workoutId);
 }
 
 function filterRecords() {
