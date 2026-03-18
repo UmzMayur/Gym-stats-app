@@ -18,9 +18,14 @@ class GymStatsTracker {
         this.setDefaultDate();
         this.setupEventListeners();
         await this.loadData();
-        this.updateDashboard();
-        this.renderExerciseList();
-        this.updatePersonalRecords();
+        
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+            this.updateDashboard();
+            this.renderExerciseList();
+            this.updatePersonalRecords();
+            this.renderHistory();
+        }, 100);
     }
 
     async initDatabase() {
@@ -420,11 +425,18 @@ class GymStatsTracker {
         const totalVolume = this.calculateTotalVolume();
         const personalRecords = this.getPersonalRecordsCount();
 
-        // Update stat cards
-        document.getElementById('total-workouts').textContent = totalWorkouts;
-        document.getElementById('week-workouts').textContent = weekWorkouts;
-        document.getElementById('total-volume').textContent = totalVolume.toLocaleString();
-        document.getElementById('personal-records').textContent = personalRecords;
+        // Update stat cards with error handling
+        const totalWorkoutsEl = document.getElementById('total-workouts');
+        if (totalWorkoutsEl) totalWorkoutsEl.textContent = totalWorkouts;
+        
+        const weekWorkoutsEl = document.getElementById('week-workouts');
+        if (weekWorkoutsEl) weekWorkoutsEl.textContent = weekWorkouts;
+        
+        const totalVolumeEl = document.getElementById('total-volume');
+        if (totalVolumeEl) totalVolumeEl.textContent = totalVolume.toLocaleString();
+        
+        const personalRecordsEl = document.getElementById('personal-records');
+        if (personalRecordsEl) personalRecordsEl.textContent = personalRecords;
 
         // Update recent workouts
         this.renderRecentWorkouts();
@@ -516,6 +528,8 @@ class GymStatsTracker {
 
     renderHistory() {
         const container = document.getElementById('workout-history');
+        if (!container) return; // Don't run if container doesn't exist
+        
         const sortedWorkouts = this.workouts.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         if (sortedWorkouts.length === 0) {
@@ -557,6 +571,8 @@ class GymStatsTracker {
 
     renderExerciseList() {
         const container = document.getElementById('exercise-list');
+        if (!container) return; // Don't run if container doesn't exist
+        
         const searchTerm = document.getElementById('exercise-search')?.value.toLowerCase() || '';
         
         const filteredExercises = this.exercises.filter(exercise => 
@@ -788,6 +804,8 @@ class GymStatsTracker {
 
     updatePersonalRecords() {
         const container = document.getElementById('personal-records-list');
+        if (!container) return; // Don't run if container doesn't exist
+        
         const records = this.calculatePersonalRecords();
 
         if (records.length === 0) {
