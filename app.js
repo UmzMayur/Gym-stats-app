@@ -194,15 +194,28 @@ class GymStatsTracker {
         });
 
         // Show selected view
-        document.getElementById(`${viewName}-view`).classList.remove('hidden');
+        const selectedView = document.getElementById(`${viewName}-view`);
+        selectedView.classList.remove('hidden');
+        
+        // Add slide-in animation to the view
+        selectedView.querySelectorAll('.slide-in').forEach((element, index) => {
+            element.style.animation = 'none';
+            element.offsetHeight; // Trigger reflow
+            element.style.animation = `slideIn 0.5s ease-out ${index * 0.1}s`;
+        });
 
         // Update navigation
         document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.classList.remove('text-purple-600');
-            btn.classList.add('text-gray-700');
+            btn.classList.remove('active');
         });
-        event.target.closest('.nav-btn').classList.remove('text-gray-700');
-        event.target.closest('.nav-btn').classList.add('text-purple-600');
+        
+        // Find and activate the clicked button
+        const activeBtn = Array.from(document.querySelectorAll('.nav-btn')).find(btn => 
+            btn.getAttribute('onclick').includes(viewName)
+        );
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
 
         this.currentView = viewName;
 
@@ -211,6 +224,8 @@ class GymStatsTracker {
             this.updateDashboard();
         } else if (viewName === 'history') {
             this.renderHistory();
+        } else if (viewName === 'personal-records') {
+            this.renderPersonalRecords();
         }
     }
 
@@ -219,39 +234,39 @@ class GymStatsTracker {
         const exerciseId = `exercise-${this.exerciseCounter++}`;
         
         const exerciseDiv = document.createElement('div');
-        exerciseDiv.id = exerciseId;
-        exerciseDiv.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
         exerciseDiv.innerHTML = `
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Exercise</label>
-                        <select class="exercise-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required>
-                            <option value="">Select exercise...</option>
-                            ${this.exercises.map(ex => `<option value="${ex.id}">${ex.name}</option>`).join('')}
-                        </select>
+            <div class="workout-card border border-white/20 rounded-xl p-3 sm:p-4 shadow-xl">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Exercise</label>
+                            <select class="exercise-select input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" required>
+                                <option value="">Select exercise...</option>
+                                ${this.exercises.map(ex => `<option value="${ex.id}">${ex.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Sets</label>
+                            <input type="number" min="1" value="1" class="sets-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Reps</label>
+                            <input type="number" min="1" value="1" class="reps-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm" required>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Sets</label>
-                        <input type="number" min="1" value="1" class="sets-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Reps</label>
-                        <input type="number" min="1" value="1" class="reps-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" required>
-                    </div>
+                    <button type="button" onclick="removeExercise('${exerciseId}')" class="ml-2 sm:ml-4 text-red-500 hover:text-red-700 text-sm sm:text-base transition-colors duration-200">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
-                <button type="button" onclick="removeExercise('${exerciseId}')" class="ml-4 text-red-500 hover:text-red-700">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kgs)</label>
-                    <input type="number" min="0" step="2.5" value="0" class="weight-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
-                    <input type="number" min="0" value="0" class="duration-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                    <div>
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Weight (kgs)</label>
+                        <input type="number" min="0" step="2.5" value="0" class="weight-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+                        <input type="number" min="0" value="0" class="duration-input input-field w-full px-2 sm:px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    </div>
                 </div>
             </div>
         `;
@@ -542,6 +557,215 @@ class GymStatsTracker {
         return Array.from(records.values()).sort((a, b) => b.weight - a.weight);
     }
 
+    calculatePersonalRecords() {
+        const records = {};
+        
+        this.workouts.forEach(workout => {
+            workout.exercises.forEach(exercise => {
+                const exerciseName = exercise.exerciseName;
+                if (!records[exerciseName]) {
+                    records[exerciseName] = {
+                        exerciseId: exercise.exerciseId,
+                        name: exerciseName,
+                        maxWeight: 0,
+                        maxReps: 0,
+                        maxVolume: 0,
+                        maxSets: 0,
+                        maxDuration: 0,
+                        bestWorkout: null,
+                        date: null
+                    };
+                }
+                
+                const record = records[exerciseName];
+                const volume = exercise.sets * exercise.reps * exercise.weight;
+                
+                // Update records
+                if (exercise.weight > record.maxWeight) {
+                    record.maxWeight = exercise.weight;
+                    record.bestWorkout = workout;
+                    record.date = workout.date;
+                }
+                
+                if (exercise.reps > record.maxReps) {
+                    record.maxReps = exercise.reps;
+                }
+                
+                if (volume > record.maxVolume) {
+                    record.maxVolume = volume;
+                    record.bestWorkout = workout;
+                    record.date = workout.date;
+                }
+                
+                if (exercise.sets > record.maxSets) {
+                    record.maxSets = exercise.sets;
+                }
+                
+                if (exercise.duration > record.maxDuration) {
+                    record.maxDuration = exercise.duration;
+                }
+            });
+        });
+        
+        return Object.values(records);
+    }
+
+    renderPersonalRecords() {
+        const container = document.getElementById('personal-records-list');
+        const records = this.calculatePersonalRecords();
+        
+        // Update summary cards
+        this.updateRecordsSummary(records);
+        
+        if (records.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                        <i class="fas fa-trophy text-white text-2xl"></i>
+                    </div>
+                    <p class="text-gray-500">No personal records yet. Start logging workouts to see your records!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = records.map(record => `
+            <div class="workout-card border border-white/20 rounded-xl p-4 sm:p-5 shadow-xl">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-1">${record.name}</h4>
+                        <p class="text-sm text-gray-500">
+                            <i class="fas fa-calendar-alt mr-1"></i>
+                            ${record.date ? this.formatDate(record.date) : 'No date'}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        ${record.maxWeight > 0 ? `
+                            <div class="px-3 py-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-xs font-medium">
+                                <i class="fas fa-weight-hanging mr-1"></i>${record.maxWeight} kgs
+                            </div>
+                        ` : ''}
+                        ${record.maxVolume > 0 ? `
+                            <div class="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-xs font-medium">
+                                <i class="fas fa-chart-column mr-1"></i>${record.maxVolume.toLocaleString()} vol
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="text-center p-2 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Max Weight</p>
+                        <p class="text-sm font-bold text-gray-900">${record.maxWeight} kgs</p>
+                    </div>
+                    <div class="text-center p-2 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Max Reps</p>
+                        <p class="text-sm font-bold text-gray-900">${record.maxReps}</p>
+                    </div>
+                    <div class="text-center p-2 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Max Volume</p>
+                        <p class="text-sm font-bold text-gray-900">${record.maxVolume.toLocaleString()}</p>
+                    </div>
+                    <div class="text-center p-2 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Max Sets</p>
+                        <p class="text-sm font-bold text-gray-900">${record.maxSets}</p>
+                    </div>
+                </div>
+                
+                ${record.bestWorkout && record.bestWorkout.notes ? `
+                    <div class="mt-3 p-2 bg-blue-50 rounded-lg">
+                        <p class="text-xs text-blue-700">
+                            <i class="fas fa-sticky-note mr-1"></i>
+                            ${record.bestWorkout.notes}
+                        </p>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+
+    updateRecordsSummary(records) {
+        // Total records count
+        document.getElementById('total-records-count').textContent = records.length;
+    }
+
+    filterRecords() {
+        const searchTerm = document.getElementById('record-search').value.toLowerCase();
+        const records = this.calculatePersonalRecords();
+        
+        const filteredRecords = records.filter(record => 
+            record.name.toLowerCase().includes(searchTerm)
+        );
+        
+        const container = document.getElementById('personal-records-list');
+        
+        if (filteredRecords.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                        <i class="fas fa-search text-white text-2xl"></i>
+                    </div>
+                    <p class="text-gray-500">No records found for "${searchTerm}"</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = filteredRecords.map(record => `
+            <div class="workout-card border border-white/20 rounded-xl p-4 sm:p-5 shadow-xl">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-1">${record.name}</h4>
+                        <p class="text-sm text-gray-500">
+                            <i class="fas fa-calendar-alt mr-1"></i>
+                            ${record.date ? this.formatDate(record.date) : 'No date'}
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        ${record.maxWeight > 0 ? `
+                            <div class="px-3 py-1 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full text-xs font-medium">
+                                <i class="fas fa-weight-hanging mr-1"></i>${record.maxWeight} kgs
+                            </div>
+                        ` : ''}
+                        ${record.maxVolume > 0 ? `
+                            <div class="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-xs font-medium">
+                                <i class="fas fa-chart-column mr-1"></i>${record.maxVolume.toLocaleString()} vol
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="text-center p-2 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Max Weight</p>
+                        <p class="text-sm font-bold text-gray-900">${record.maxWeight} kgs</p>
+                    </div>
+                    <div class="text-center p-2 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Max Reps</p>
+                        <p class="text-sm font-bold text-gray-900">${record.maxReps}</p>
+                    </div>
+                    <div class="text-center p-2 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Max Volume</p>
+                        <p class="text-sm font-bold text-gray-900">${record.maxVolume.toLocaleString()}</p>
+                    </div>
+                    <div class="text-center p-2 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-500 mb-1">Max Sets</p>
+                        <p class="text-sm font-bold text-gray-900">${record.maxSets}</p>
+                    </div>
+                </div>
+                
+                ${record.bestWorkout && record.bestWorkout.notes ? `
+                    <div class="mt-3 p-2 bg-blue-50 rounded-lg">
+                        <p class="text-xs text-blue-700">
+                            <i class="fas fa-sticky-note mr-1"></i>
+                            ${record.bestWorkout.notes}
+                        </p>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+
     filterHistory() {
         const startDate = document.getElementById('history-start-date').value;
         const endDate = document.getElementById('history-end-date').value;
@@ -640,6 +864,10 @@ function hideAddExerciseModal() {
 
 async function deleteExercise(exerciseId) {
     await app.deleteExercise(exerciseId);
+}
+
+function filterRecords() {
+    app.filterRecords();
 }
 
 // Initialize app when DOM is loaded
