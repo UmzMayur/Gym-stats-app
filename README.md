@@ -46,14 +46,6 @@ A modern, responsive web application for tracking your gym workouts, exercises, 
 - ✅ **Offline Ready**: Works without internet after first load
 - ✅ **Fast Loading**: Optimized for mobile performance
 
-## Data Storage
-
-Your data is stored in **IndexedDB**, which is a built-in browser database that provides:
-- ✅ **Larger storage capacity** than LocalStorage (typically 50MB+ vs 5MB)
-- ✅ **Better performance** for larger datasets
-- ✅ **Structured storage** with indexes for faster queries
-- ✅ **Transactional operations** for data integrity
-- ✅ **Still private and local** - no data sent to external servers
 
 ### Database Structure:
 - **Database Name**: `GymStatsDB`
