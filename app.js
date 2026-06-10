@@ -1,12 +1,11 @@
-import { db } from './firebase.js';
-import {
-    collection,
-    doc,
-    getDocs,
-    setDoc,
-    deleteDoc
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
+import { db, auth } from './firebase.js';
+import { collection, doc, getDocs, setDoc, deleteDoc } from "firebase/firestore";
+import { 
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+} from "firebase/auth";
 // Gym Stats Tracker Application
 class GymStatsTracker {
     constructor() {
